@@ -1,0 +1,284 @@
+<!-- Copyright (c) 2021 leoetlino -->
+<!-- SPDX-License-Identifier: MIT -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
+    <style>
+      [v-cloak] { display: none; }
+
+      .enum, .record {
+        margin-bottom: 20px;
+      }
+
+      .enum table, .record table {
+        font-size: 14px;
+      }
+
+      .enum table > :not(caption) > * > *, .record table > :not(caption) > * > * {
+        padding: 0.25rem 0.5rem;
+      }
+
+      .mono {
+        font-family: "Roboto Mono", monospace;
+      }
+
+      .enumerator-identifier {
+        white-space: nowrap;
+      }
+
+      .enumerator-value {
+        width: 99%;
+      }
+
+      .field-offset, .field-type {
+        white-space: nowrap;
+      }
+
+      .field-name {
+        width: 99%;
+      }
+
+      .vtable-component-index {
+        width: 5%;
+      }
+    </style>
+    <title>classgen viewer</title>
+  </head>
+  <body>
+    <div class="container-fluid" id="app" v-cloak>
+      <nav class="navbar navbar-light bg-light mb-3">
+        <div class="container">
+          <a class="navbar-brand">classgen viewer</a>
+          <form class="d-flex">
+            <input class="form-control me-2" type="file" @change="onFileSelect">
+          </form>
+        </div>
+      </nav>
+
+      <div class="container">
+        <div class="alert alert-danger" v-show="error != null">
+          Failed to load JSON: {{ error }}
+        </div>
+
+        <div v-show="data == null && !loading">
+          <div class="alert alert-primary">
+            Select a .json type dump to get started.
+          </div>
+        </div>
+
+        <div v-show="loading">
+          <div class="alert alert-info">
+            Loading...
+          </div>
+        </div>
+      </div>
+
+      <div v-if="data != null">
+        <h2 class="my-4">Enums</h2>
+        <div class="card enum border-secondary" v-for="def in data.enums">
+          <div class="card-header">
+            enum <span class="mono">{{def.name}}</span>
+          </div>
+          <div class="card-body">
+            <p class="card-subtitle mb-2 text-muted">Underlying type: <span class="mono">{{def.underlying_type_name}}</span><br>Scoped: <span class="mono">{{def.is_scoped}}</span></p>
+
+            <table class="table table-striped table-sm">
+              <thead>
+                <tr>
+                  <th scope="col" class="enumerator-identifier">Identifier</th>
+                  <th scope="col" class="enumerator-value">Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="enumerator in def.enumerators">
+                  <td class="mono">{{enumerator.identifier}}</td>
+                  <td class="mono">{{enumerator.value}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <h2 class="my-4">Records</h2>
+        <div class="card record border-success" v-for="def in data.records">
+          <div class="card-header">
+            {{reprRecordKind(def.kind)}} <span class="mono">{{def.name}}</span>
+          </div>
+          <div class="card-body">
+            <p class="card-subtitle mb-2 text-muted">Size: {{hex(def.size)}} bytes<br>Alignment: {{hex(def.alignment)}} bytes</p>
+
+            <table class="table table-striped table-sm">
+              <thead>
+                <tr>
+                  <th scope="col" class="field-offset">Offset</th>
+                  <th scope="col" class="field-type">Type</th>
+                  <th scope="col" class="field-name">Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="field in def.fields">
+                  <td class="mono text-end field-offset">{{hex(field.offset)}}</td>
+                  <td class="mono field-type">{{reprFieldType(field)}}</td>
+                  <td class="mono field-name">{{reprFieldName(field)}}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div v-if="def.vtable != null">
+              <h6 class="card-subtitle my-3">VTable for <span class="mono">{{def.name}}</span></h6>
+
+              <table class="table table-striped table-sm table-secondary">
+                <thead>
+                  <tr>
+                    <th scope="col" class="vtable-component-index">Index</th>
+                    <th scope="col" class="vtable-component-data">Data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(component, index) in def.vtable">
+                    <td class="mono text-end">{{index}}</td>
+                    <td class="mono">{{reprVtableComponent(component)}}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/vue@3.2.22/dist/vue.global.prod.js"></script>
+    <script>
+      const App = {
+        data() {
+          return {
+            data: null,
+            error: null,
+            loading: false,
+          };
+        },
+
+        methods: {
+          onFileSelect(e) {
+            this.error = null;
+            this.loading = true;
+
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+              try {
+                this.data = Object.freeze(JSON.parse(evt.target.result));
+                this.loading = false;
+              } catch (error) {
+                this.error = error;
+                this.loading = false;
+              }
+            };
+            reader.onerror = (error) => {
+              this.error = error;
+              this.loading = false;
+            };
+            reader.readAsText(e.target.files[0]);
+          },
+
+          reprRecordKind(kind) {
+            return {
+              0: "class",
+              1: "struct",
+              2: "union",
+            }[kind];
+          },
+
+          reprFieldType(field) {
+            if (field.kind == "member") {
+              return field.type_name;
+            }
+
+            if (field.kind == "base") {
+              return field.type_name;
+            }
+
+            if (field.kind == "vtable_ptr") {
+              return "vtable pointer";
+            }
+
+            return "???";
+          },
+
+          reprFieldName(field) {
+            if (field.kind == "member") {
+              return field.name;
+            }
+
+            if (field.kind == "base") {
+              let repr = `[base]`;
+
+              if (field.is_primary)
+                repr += " [primary]";
+
+              if (field.is_virtual)
+                repr += " [virtual]";
+
+                return repr;
+            }
+
+            if (field.kind == "vtable_ptr") {
+              return "";
+            }
+
+            return "???";
+          },
+
+          reprVtableFunction(component) {
+            return component.repr;
+          },
+
+          reprVtableComponent(component) {
+            if (component.kind == "vcall_offset") {
+              return `vcall_offset: ${this.hex(component.offset)}`;
+            }
+
+            if (component.kind == "vbase_offset") {
+              return `vbase_offset: ${this.hex(component.offset)}`;
+            }
+
+            if (component.kind == "offset_to_top") {
+              return `offset_to_top: ${this.hex(component.offset)}`;
+            }
+
+            if (component.kind == "rtti") {
+              return `RTTI for ${component.class_name}`;
+            }
+
+            if (component.kind == "func") {
+              return this.reprVtableFunction(component);
+            }
+
+            if (component.kind == "complete_dtor") {
+              return this.reprVtableFunction(component);
+            }
+
+            if (component.kind == "deleting_dtor") {
+              return this.reprVtableFunction(component);
+            }
+
+            return "???";
+          },
+
+          hex(n) {
+            let repr = n < 0 ? "-" : "";
+            repr += "0x" + Math.abs(n).toString(16);
+            return repr;
+          },
+        },
+      };
+
+      Vue.createApp(App).mount("#app");
+    </script>
+  </body>
+</html>
