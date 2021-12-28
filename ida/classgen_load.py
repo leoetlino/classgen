@@ -2,6 +2,7 @@ from collections import defaultdict
 import importlib
 import json
 import math
+from pathlib import Path
 from typing import DefaultDict, List, Optional, Set, Union, cast
 
 import ida_typeinf
@@ -68,7 +69,13 @@ class Importer:
             "long double": ida_typeinf.BTF_LDOUBLE,
         }
 
-    def import_data(self, data: TypeDump, selected: Set[str]):
+    def import_data(
+        self,
+        data: TypeDump,
+        prev_records: dict,
+        selected: Set[str],
+    ):
+        self.previous_records_by_name = prev_records
         self.enums_by_name = {e["name"]: e for e in data["enums"]}
         self.records_by_name = {e["name"]: e for e in data["records"]}
 
@@ -120,6 +127,11 @@ class Importer:
 
         self._set_named_type(tinfo, name, data)
 
+    def _is_record_up_to_date(self, data: RecordInfo):
+        name: str = data["name"]
+        previous_record = self.previous_records_by_name.get(name)
+        return previous_record == data
+
     def import_record(self, data: RecordInfo):
         name: str = data["name"]
         kind: int = data["kind"]
@@ -128,12 +140,14 @@ class Importer:
             return
 
         self.imported.add(name)
-        print("IMPORTING: " + name)
+
+        is_up_to_date = self._is_record_up_to_date(data)
 
         # Make a placeholder declaration in case the struct contains a type
         # that refers to the struct itself.
         # Example: struct Node { Node* next; };
-        self._add_placeholder_record(data, name)
+        if not is_up_to_date:
+            self._add_placeholder_record(data, name)
 
         definition = ida_typeinf.udt_type_data_t()
         definition.taudt_bits |= ida_typeinf.TAUDT_CPPOBJ
@@ -170,6 +184,11 @@ class Importer:
                 f"size mismatch for {name}: {tinfo.get_size()} != {data['size']} (expected)"
             )
 
+        if is_up_to_date:
+            print("up-to-date: " + name)
+            return
+
+        print("importing: " + name)
         self._set_named_type(tinfo, name, data)
         self._import_record_vtable(data)
 
@@ -848,6 +867,14 @@ def main() -> None:
     with open(path, "rb") as f:
         data: TypeDump = json.load(f)
 
+    prev_records = dict()
+    prev_records_path = Path(path + ".imported")
+    try:
+        with prev_records_path.open("rb") as f:
+            prev_records = json.load(f)
+    except:
+        pass
+
     chooser = TypeChooser(data)
     result = chooser.exec_()
     if result == QDialog.Rejected:
@@ -856,7 +883,14 @@ def main() -> None:
     selected = chooser.get_selected()
 
     importer = Importer()
-    importer.import_data(data, selected)
+    importer.import_data(data, prev_records, selected)
+
+    # Update the imported types database.
+    for e in data["records"]:
+        if e["name"] in importer.imported:
+            prev_records[e["name"]] = e
+    with prev_records_path.open("w") as f:
+        json.dump(prev_records, f)
 
 
 if __name__ == "__main__":
