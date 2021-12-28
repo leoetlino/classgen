@@ -181,6 +181,20 @@ class Importer:
         self._import_record_unaligned(data, decl_type)
 
     def _add_placeholder_record(self, data: RecordInfo, name: str):
+        expected_sda = int(math.log2(data["alignment"])) + 1
+
+        # If the type already exists and has the correct size and alignment,
+        # then we have nothing to do.
+        existing_type = ida_typeinf.tinfo_t()
+        if existing_type.get_named_type(None, name):
+            udt = ida_typeinf.udt_type_data_t()
+            if (
+                existing_type.get_udt_details(udt)
+                and udt.size == 8 * data["size"]
+                and udt.sda == expected_sda
+            ):
+                return
+
         storage_tinfo = ida_typeinf.tinfo_t(ida_typeinf.BTF_CHAR)
         if not storage_tinfo.create_array(storage_tinfo, data["size"]):
             raise RuntimeError("create_array failed")
@@ -193,7 +207,7 @@ class Importer:
 
         udt = ida_typeinf.udt_type_data_t()
         udt.taudt_bits |= ida_typeinf.TAUDT_CPPOBJ
-        udt.sda = int(math.log2(data["alignment"])) + 1
+        udt.sda = expected_sda
         udt.push_back(storage)
 
         tinfo = ida_typeinf.tinfo_t()
