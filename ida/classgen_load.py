@@ -74,10 +74,12 @@ class Importer:
         data: TypeDump,
         prev_records: dict,
         selected: Set[str],
+        skipped_types: Set[str],
     ):
         self.previous_records_by_name = prev_records
         self.enums_by_name = {e["name"]: e for e in data["enums"]}
         self.records_by_name = {e["name"]: e for e in data["records"]}
+        self.skipped_types = skipped_types
 
         for e in data["enums"]:
             if e["name"] not in selected:
@@ -140,6 +142,10 @@ class Importer:
             return
 
         self.imported.add(name)
+
+        if name in self.skipped_types:
+            print(f"warning: skipping {name} as requested")
+            return
 
         is_up_to_date = self._is_record_up_to_date(data)
 
@@ -875,6 +881,14 @@ def main() -> None:
     except:
         pass
 
+    skipped_types: Set[str] = set()
+    try:
+        with Path(path + ".skip").open("r") as f:
+            for line in f:
+                skipped_types.add(line.strip())
+    except IOError:
+        pass
+
     chooser = TypeChooser(data)
     result = chooser.exec_()
     if result == QDialog.Rejected:
@@ -883,7 +897,7 @@ def main() -> None:
     selected = chooser.get_selected()
 
     importer = Importer()
-    importer.import_data(data, prev_records, selected)
+    importer.import_data(data, prev_records, selected, skipped_types)
 
     # Update the imported types database.
     for e in data["records"]:
