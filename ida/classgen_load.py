@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import DefaultDict, List, Optional, Set, Union, cast
 
 import ida_typeinf
+import idc
 from PyQt5.QtCore import (
     QAbstractListModel,
     QModelIndex,
@@ -864,6 +865,10 @@ class TypeChooser(QDialog):
 
 
 def main() -> None:
+    idb_path: str = idc.get_idb_path()
+    if not idb_path:
+        raise RuntimeError("failed to get IDB path")
+
     path, _ = QFileDialog.getOpenFileName(None, "Select a type dump", "", "*.json")
     if not path:
         return
@@ -874,7 +879,7 @@ def main() -> None:
         data: TypeDump = json.load(f)
 
     prev_records = dict()
-    prev_records_path = Path(path + ".imported")
+    prev_records_path = Path(idb_path + ".imported")
     try:
         with prev_records_path.open("rb") as f:
             prev_records = json.load(f)
@@ -883,7 +888,7 @@ def main() -> None:
 
     skipped_types: Set[str] = set()
     try:
-        with Path(path + ".skip").open("r") as f:
+        with Path(idb_path + ".skip").open("r") as f:
             for line in f:
                 skipped_types.add(line.strip())
     except IOError:
