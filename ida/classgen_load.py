@@ -909,7 +909,7 @@ def main() -> None:
         if e["name"] in importer.imported:
             prev_records[e["name"]] = e
     with prev_records_path.open("w") as f:
-        json.dump(prev_records, f)
+        json.dump(prev_records, f, indent=4)
 
 
 if __name__ == "__main__":
