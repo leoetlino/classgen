@@ -24,6 +24,8 @@ static void DumpComplexType(llvm::json::OStream& out, const classgen::ComplexTyp
     const auto& name = static_cast<const classgen::ComplexTypeName&>(type);
     write_common("type_name");
     out.attribute("name", name.name);
+    out.attribute("is_const", name.is_const);
+    out.attribute("is_volatile", name.is_volatile);
     break;
   }
 

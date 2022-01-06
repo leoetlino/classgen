@@ -163,8 +163,10 @@ std::unique_ptr<ComplexType> TranslateToComplexType(clang::QualType type, clang:
     return std::make_unique<ComplexTypeFunction>(std::move(params), std::move(return_type));
   }
 
+  const bool is_const = type.isConstQualified();
+  const bool is_volatile = type.isVolatileQualified();
   type.removeLocalFastQualifiers();
-  return std::make_unique<ComplexTypeName>(type.getAsString(policy));
+  return std::make_unique<ComplexTypeName>(type.getAsString(policy), is_const, is_volatile);
 }
 
 const clang::ThunkInfo* GetThunkInfo(const clang::VTableLayout& layout, std::size_t idx) {

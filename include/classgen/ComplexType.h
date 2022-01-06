@@ -34,10 +34,13 @@ protected:
 
 class ComplexTypeName final : public ComplexType {
 public:
-  explicit ComplexTypeName(std::string name_)
-      : ComplexType(Kind::TypeName), name(std::move(name_)) {}
+  explicit ComplexTypeName(std::string name_, bool is_const_, bool is_volatile_)
+      : ComplexType(Kind::TypeName), name(std::move(name_)), is_const(is_const_),
+        is_volatile(is_volatile_) {}
 
   std::string name;
+  bool is_const;
+  bool is_volatile;
 };
 
 class ComplexTypePointer final : public ComplexType {
