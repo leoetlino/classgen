@@ -687,7 +687,12 @@ class Importer:
             return self._get_type_by_name(ptmf_struct_name)
 
         if t["kind"] == "type_name":
-            return self._get_type_by_name(t["name"])
+            tinfo = self._get_type_by_name(t["name"])
+            if t["is_const"]:
+                tinfo.set_const()
+            if t["is_volatile"]:
+                tinfo.set_volatile()
+            return tinfo
 
         raise ValueError("unexpected complex type kind", t)
 

@@ -23,6 +23,8 @@ class ComplexTypeInfo(TypedDict):
 class ComplexTypeNameInfo(ComplexTypeInfo):
     kind: Literal["type_name"]
     name: str
+    is_const: bool
+    is_volatile: bool
 
 
 class ComplexTypePointerInfo(ComplexTypeInfo):
