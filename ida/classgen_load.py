@@ -15,6 +15,7 @@ from PyQt5.QtCore import (
 )
 from PyQt5.QtWidgets import (
     QAction,
+    QCheckBox,
     QDialogButtonBox,
     QFileDialog,
     QDialog,
@@ -76,11 +77,13 @@ class Importer:
         prev_records: dict,
         selected: Set[str],
         skipped_types: Set[str],
+        force_reimport: bool,
     ):
         self.previous_records_by_name = prev_records
         self.enums_by_name = {e["name"]: e for e in data["enums"]}
         self.records_by_name = {e["name"]: e for e in data["records"]}
         self.skipped_types = skipped_types
+        self.force_reimport = force_reimport
 
         for e in data["enums"]:
             if e["name"] not in selected:
@@ -131,6 +134,9 @@ class Importer:
         self._set_named_type(tinfo, name, data)
 
     def _is_record_up_to_date(self, data: RecordInfo):
+        if self.force_reimport:
+            return False
+
         name: str = data["name"]
         previous_record = self.previous_records_by_name.get(name)
         return previous_record == data
@@ -575,7 +581,10 @@ class Importer:
         # FIXME: this is ugly.
         if name == "__attribute__((__vector_size__(4 * sizeof(float)))) float":
             return self._get_type_by_name("float32x4_t")
-        if name == "__attribute__((__vector_size__(4 * sizeof(unsigned int)))) unsigned int":
+        if (
+            name
+            == "__attribute__((__vector_size__(4 * sizeof(unsigned int)))) unsigned int"
+        ):
             return self._get_type_by_name("int32x4_t")
         if name == "__attribute__((__vector_size__(4 * sizeof(int)))) int":
             return self._get_type_by_name("int32x4_t")
@@ -844,6 +853,8 @@ class TypeChooser(QDialog):
         filter_bar_widget = QWidget()
         filter_bar_widget.setLayout(filter_bar)
 
+        self.force_reimport_btn = QCheckBox("Force re-import")
+
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
@@ -851,6 +862,7 @@ class TypeChooser(QDialog):
         layout = QVBoxLayout()
         layout.addWidget(view, stretch=1)
         layout.addWidget(filter_bar_widget)
+        layout.addWidget(self.force_reimport_btn)
         layout.addWidget(button_box)
         self.setLayout(layout)
 
@@ -865,6 +877,9 @@ class TypeChooser(QDialog):
             if checked:
                 result.add(k)
         return result
+
+    def is_force_reimport(self) -> bool:
+        return self.force_reimport_btn.isChecked()
 
     def on_all(self, checked):
         model: QAbstractListModel = self.view.model()
@@ -917,7 +932,13 @@ def main() -> None:
     selected = chooser.get_selected()
 
     importer = Importer()
-    importer.import_data(data, prev_records, selected, skipped_types)
+    importer.import_data(
+        data,
+        prev_records,
+        selected,
+        skipped_types,
+        force_reimport=chooser.is_force_reimport(),
+    )
 
     # Update the imported types database.
     for e in data["records"]:
