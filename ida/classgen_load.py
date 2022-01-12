@@ -575,6 +575,10 @@ class Importer:
         # FIXME: this is ugly.
         if name == "__attribute__((__vector_size__(4 * sizeof(float)))) float":
             return self._get_type_by_name("float32x4_t")
+        if name == "__attribute__((__vector_size__(4 * sizeof(unsigned int)))) unsigned int":
+            return self._get_type_by_name("int32x4_t")
+        if name == "__attribute__((__vector_size__(4 * sizeof(int)))) int":
+            return self._get_type_by_name("int32x4_t")
 
         # This check ensures that dependencies are re-imported
         # from the type dump even if they already exist in IDA.
