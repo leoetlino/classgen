@@ -291,6 +291,7 @@ std::unique_ptr<VTable> ParseVTable(const clang::CXXRecordDecl* D) {
       }
 
       auto entry = VTableComponent::FunctionPointer{
+          .is_const = func->isConst(),
           .repr = std::move(repr),
           .function_name = std::move(name),
           .type = TranslateToComplexType(func->getType(), ctx, policy),

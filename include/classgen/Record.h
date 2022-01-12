@@ -53,6 +53,8 @@ struct VTableComponent {
   struct FunctionPointer {
     /// Whether this function is a thunk.
     bool is_thunk = false;
+    /// Whether this is a const member function.
+    bool is_const = false;
     /// [Thunks] [Itanium ABI] Return adjustment.
     std::int64_t return_adjustment = 0;
     /// [Thunks] [Itanium ABI] Return adjustment vbase offset offset.

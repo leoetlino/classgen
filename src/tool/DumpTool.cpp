@@ -90,6 +90,7 @@ static void DumpEnum(llvm::json::OStream& out, const classgen::Enum& enum_def) {
 static void DumpVTableFunction(llvm::json::OStream& out,
                                const classgen::VTableComponent::FunctionPointer& func) {
   out.attribute("is_thunk", func.is_thunk);
+  out.attribute("is_const", func.is_const);
 
   if (func.is_thunk) {
     out.attribute("return_adjustment", func.return_adjustment);

@@ -86,6 +86,7 @@ class VTableComponentRTTIInfo(VTableComponentInfo):
 
 class VTableComponentFuncInfoBase(VTableComponentInfo):
     is_thunk: bool
+    is_const: bool
     repr: str
     function_name: str
     type: ComplexTypeUnion

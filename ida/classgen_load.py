@@ -531,6 +531,12 @@ class Importer:
             adj = adj.replace("-", "m")
             name += f"__thunk_{adj}"
 
+        if component["is_const"]:
+            this_type = this_type.get_pointed_object().copy()
+            this_type.set_const()
+            if not this_type.create_ptr(this_type):
+                raise RuntimeError("failed to const-ify this pointer")
+
         func_tinfo = self._get_complex_type(component["type"], this_type)
         if not func_tinfo.is_func():
             raise RuntimeError("unexpected tinfo type for function", func_tinfo)
