@@ -579,6 +579,8 @@ class Importer:
             return ida_typeinf.tinfo_t(fundamental_type)
 
         # FIXME: this is ugly.
+        if name == "__attribute__((__vector_size__(2 * sizeof(float)))) float":
+            return self._get_type_by_name("float32x2_t")
         if name == "__attribute__((__vector_size__(4 * sizeof(float)))) float":
             return self._get_type_by_name("float32x4_t")
         if (
