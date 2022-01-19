@@ -7,8 +7,9 @@ Small Clang-based tool to dump type information (enums, records, vtables) from a
 
 - A compiler that supports C++20
 - CMake 3.16+
-- LLVM + Clang
-  - Version 13 and 14 are known to work; other versions are untested.
+- LLVM + Clang 13+
+  - Version 13 and 14 are known to work. Versions <= 12 are too old.
+  - If your version is too old, grab a newer release of LLVM from [releases.llvm.org](https://releases.llvm.org/)
 
 ## Building from source
 
