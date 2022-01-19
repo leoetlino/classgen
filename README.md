@@ -12,7 +12,7 @@ Small Clang-based tool to dump type information (enums, records, vtables) from a
 
 ## Building from source
 
-1. `git clone https://github.com/leoetlino/classgen`
+1. `git clone --recursive https://github.com/leoetlino/classgen`
 2. `mkdir build` then `cd build`
 3. `cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo`
     * This will automatically locate an existing install of LLVM.
