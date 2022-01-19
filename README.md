@@ -57,3 +57,11 @@ Known issues:
 * Importing types on older databases can sometimes cause existing types to break. This is because of IDA bugs or because your types are defined incorrectly. If you are importing a type that already exists in your database, make sure that it has the correct size and alignment.
 
 * IDA <= 7.6 does not understand that class tail padding can be reused for derived class data members. To work around this shortcoming, the type importer creates two structs for every record you're importing: one with the correct alignment/sizeof, and another one with the "packed" attribute and with a `$$` name prefix. If necessary, the importer will use the packed version to represent class inheritance -- this causes ugly casts when upcasting but it is the only way to get the correct object layout under IDA's current type model.
+
+#### Speeding up imports
+
+To avoid useless re-imports, the IDA script keeps track of type definitions that have already been imported into the IDB. The type record is stored in a JSON file next to the IDB with the `.imported` file extension suffix.
+
+If you want to force a type to be imported (e.g. because you have manually edited a struct in IDA and classgen isn't detecting the change), just tick the "Force re-import" checkbox when importing.
+
+As yet another import time optimisation, it is possible to specify a list of types that will *never* be imported; instead, classgen will assume that they already exist in the IDB and will never attempt to create or update them. Simply create a text file next to the IDB with the `.skip` file extension suffix, and write each type that should be skipped on its own line.
