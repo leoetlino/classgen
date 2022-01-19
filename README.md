@@ -72,4 +72,4 @@ To avoid useless re-imports, the IDA script keeps track of type definitions that
 
 If you want to force a type to be imported (e.g. because you have manually edited a struct in IDA and classgen isn't detecting the change), just tick the "Force re-import" checkbox when importing.
 
-As yet another import time optimisation, it is possible to specify a list of types that will *never* be imported; instead, classgen will assume that they already exist in the IDB and will never attempt to create or update them. Simply create a text file next to the IDB with the `.skip` file extension suffix, and write each type that should be skipped on its own line.
+As yet another import time optimisation, it is possible to specify a list of types that will *never* be imported; instead, classgen will assume that they already exist in the IDB and will never attempt to create or update them. (This is also useful for minimising potential type breakage due to IDA bugs.) Simply create a text file next to the IDB with the `.skip` file extension suffix, and write each type that should be skipped on its own line.
