@@ -32,6 +32,14 @@ classgen-dump [source files...] [options] > output.json
 
 If you have a [compilation database](https://clang.llvm.org/docs/JSONCompilationDatabase.html) for your project, you can pass `-p [path to database or build dir]` to tell classgen-dump to load compilation flags from the database.
 
+Example command line for [BotW](https://github.com/zeldaret/botw):
+
+```
+classgen-dump -p build/ > types.json -i src/KingSystem/Physics/RigidBody/physRigidBody.cpp src/KingSystem/Physics/System/physUserTag.cpp
+```
+
+(Note that there is no need to pass compile flags manually because they are loaded from the compilation database thanks to the `-p` option.)
+
 Useful options:
 
 * `-i`: Inline empty structs. If passed, record types that are empty (no fields, no bases, no vtables) will be folded into their containing records. This helps reduce the number of records in the output -- typically this will prevent things like `std::integral_constant<int, 42>` from appearing in the record list.
