@@ -1,9 +1,11 @@
 from collections import defaultdict
 import importlib
+import importlib.util
 import json
 import math
 from pathlib import Path
 from typing import DefaultDict, List, Optional, Set, Union, cast
+from classgen_plugin import Plugin
 
 import ida_typeinf
 import idc
@@ -33,7 +35,8 @@ from classgen_json import *
 
 
 class Importer:
-    def __init__(self):
+    def __init__(self, plugin: Optional[Plugin]):
+        self.plugin = plugin
         self.imported = set()
 
         self.fundamental_types = {
@@ -153,6 +156,9 @@ class Importer:
         if name in self.skipped_types:
             print(f"warning: skipping {name} as requested")
             return
+
+        if self.plugin is not None:
+            data = self.plugin.transform_record_data(name, data)
 
         is_up_to_date = self._is_record_up_to_date(data)
 
@@ -903,6 +909,18 @@ class TypeChooser(QDialog):
             model.setData(idx, Qt.CheckState.Unchecked, Qt.ItemDataRole.CheckStateRole)
 
 
+def import_plugin(idb_path: str) -> Optional[Plugin]:
+    try:
+        path = idb_path + ".classgen.py"
+        spec = importlib.util.spec_from_file_location("module.name", path)
+        assert spec is not None and spec.loader is not None
+        plugin = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(plugin)
+        return plugin.make_plugin(idb_path)
+    except FileNotFoundError:
+        return None
+
+
 def main() -> None:
     idb_path: str = idc.get_idb_path()
     if not idb_path:
@@ -913,6 +931,8 @@ def main() -> None:
         return
 
     print(f"importing type dump: {path}")
+
+    plugin = import_plugin(idb_path)
 
     with open(path, "rb") as f:
         data: TypeDump = json.load(f)
@@ -940,7 +960,7 @@ def main() -> None:
         return
     selected = chooser.get_selected()
 
-    importer = Importer()
+    importer = Importer(plugin)
     importer.import_data(
         data,
         prev_records,
