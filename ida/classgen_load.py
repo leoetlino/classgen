@@ -176,7 +176,7 @@ class Importer:
         reuse_base_class_tail_padding = self._reuses_base_class_tail_padding(data)
 
         for field in data["fields"]:
-            self._create_gap_if_needed(definition, field)
+            self._create_gap_if_needed(definition, field["offset"])
             try:
                 self._import_record_field(
                     definition,
@@ -197,6 +197,16 @@ class Importer:
         tinfo = ida_typeinf.tinfo_t()
         if not tinfo.create_udt(definition, decl_type):
             raise RuntimeError("create_udt failed")
+
+        if tinfo.get_size() != data["size"]:
+            # Try again with tail padding. Might be necessary in some degenerate cases
+            # (e.g. a struct ending with a member variable that is an empty record).
+            tinfo.get_udt_details(definition)
+            self._create_gap_if_needed(definition, data["size"])
+
+            tinfo = ida_typeinf.tinfo_t()
+            if not tinfo.create_udt(definition, decl_type):
+                raise RuntimeError("create_udt failed")
 
         if tinfo.get_size() != data["size"]:
             raise RuntimeError(
@@ -270,7 +280,7 @@ class Importer:
         return False
 
     def _create_gap_if_needed(
-        self, definition: ida_typeinf.udt_type_data_t, field: FieldInfoUnion
+        self, definition: ida_typeinf.udt_type_data_t, expected_offset: int
     ):
         if definition.empty():
             return
@@ -278,7 +288,7 @@ class Importer:
         last_field: ida_typeinf.udt_member_t = definition.back()
         # In bits.
         gap_offset: int = last_field.offset + last_field.size
-        gap_size: int = field["offset"] * 8 - gap_offset
+        gap_size: int = expected_offset * 8 - gap_offset
 
         if gap_size <= 0:
             return
@@ -309,7 +319,7 @@ class Importer:
 
         for field in data["fields"]:
             # Create gaps manually because we can't rely on IDA to do it for us.
-            self._create_gap_if_needed(definition, field)
+            self._create_gap_if_needed(definition, field["offset"])
 
             try:
                 self._import_record_field(
