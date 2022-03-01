@@ -433,7 +433,7 @@ class Importer:
 
         member.size = 8 * member_size
 
-        if not definition.empty():
+        if not definition.is_union and not definition.empty():
             last_member: ida_typeinf.udt_member_t = definition.back()
             if last_member.offset == member.offset:
                 # Overlapping members. This can happen for bitfields.
