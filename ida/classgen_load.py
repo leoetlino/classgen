@@ -796,7 +796,7 @@ class RecordListModel(QAbstractListModel):
         row = index.row()
         entry = self.type_data["records"][row]
         if role == Qt.ItemDataRole.DisplayRole:
-            return f"Record: {entry['name']}"
+            return f"Record: {RecordInfoKind(entry['kind']).name} {entry['name']}"
         if role == Qt.ItemDataRole.UserRole:
             return entry["name"]
 
