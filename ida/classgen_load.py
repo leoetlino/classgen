@@ -228,6 +228,8 @@ class Importer:
         # IDA bugs. Inheriting causes offset-to-member translations to fail for some reason.
         self._import_record_unaligned(data, decl_type)
 
+        self.previous_records_by_name[data["name"]] = data
+
     def _add_placeholder_record(self, data: RecordInfo, name: str):
         expected_sda = int(math.log2(data["alignment"])) + 1
 
@@ -979,10 +981,8 @@ def main() -> None:
         force_reimport=chooser.is_force_reimport(),
     )
 
-    # Update the imported types database.
-    for e in data["records"]:
-        if e["name"] in importer.imported:
-            prev_records[e["name"]] = e
+    # Write the updated database of imported types.
+    # Note that entries are updated by the importer.
     with prev_records_path.open("w") as f:
         json.dump(prev_records, f, indent=4)
 
