@@ -594,11 +594,6 @@ class Importer:
         if name.startswith("("):
             name = "__" + name
 
-        make_volatile = False
-        if name.startswith("_Atomic(") and name.endswith(")"):
-            name = name[len("_Atomic(") : -1]
-            make_volatile = True
-
         fundamental_type = self.fundamental_types.get(name)
         if fundamental_type is not None:
             return ida_typeinf.tinfo_t(fundamental_type)
@@ -630,9 +625,6 @@ class Importer:
             self._import_record_by_name(orig_name)
             if not tinfo.get_named_type(None, name):
                 raise KeyError(name)
-
-        if make_volatile:
-            tinfo.set_volatile()
 
         return tinfo
 
@@ -739,6 +731,12 @@ class Importer:
             if t["is_volatile"]:
                 tinfo.set_volatile()
             return tinfo
+
+        if t["kind"] == "atomic":
+            value_type = cast(ComplexTypeUnion, t["value_type"])
+            value_tinfo = self._get_complex_type(value_type)
+            value_tinfo.set_volatile()
+            return value_tinfo
 
         raise ValueError("unexpected complex type kind", t)
 

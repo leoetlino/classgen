@@ -65,6 +65,13 @@ static void DumpComplexType(llvm::json::OStream& out, const classgen::ComplexTyp
     out.attribute("repr", ptr.repr);
     break;
   }
+
+  case classgen::ComplexType::Kind::Atomic: {
+    const auto& ptr = static_cast<const classgen::ComplexTypeAtomic&>(type);
+    write_common("atomic");
+    out.attributeObject("value_type", [&] { DumpComplexType(out, *ptr.value_type); });
+    break;
+  }
   }
 }
 

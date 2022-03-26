@@ -21,6 +21,7 @@ public:
     Array,
     Function,
     MemberPointer,
+    Atomic,
   };
 
   virtual ~ComplexType() = default;
@@ -84,6 +85,14 @@ public:
   std::unique_ptr<ComplexType> class_type;
   std::unique_ptr<ComplexType> pointee_type;
   std::string repr;
+};
+
+class ComplexTypeAtomic final : public ComplexType {
+public:
+  explicit ComplexTypeAtomic(std::unique_ptr<ComplexType> value_type_)
+      : ComplexType(Kind::Atomic), value_type(std::move(value_type_)) {}
+
+  std::unique_ptr<ComplexType> value_type;
 };
 
 }  // namespace classgen

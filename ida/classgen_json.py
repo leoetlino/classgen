@@ -51,12 +51,18 @@ class ComplexTypeMemberPointerInfo(ComplexTypeInfo):
     repr: str
 
 
+class ComplexTypeAtomicInfo(ComplexTypeInfo):
+    kind: Literal["atomic"]
+    value_type: ComplexTypeInfo
+
+
 ComplexTypeUnion = Union[
     ComplexTypeNameInfo,
     ComplexTypePointerInfo,
     ComplexTypeArrayInfo,
     ComplexTypeFunctionInfo,
     ComplexTypeMemberPointerInfo,
+    ComplexTypeAtomicInfo,
 ]
 
 

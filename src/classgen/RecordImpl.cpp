@@ -163,6 +163,11 @@ std::unique_ptr<ComplexType> TranslateToComplexType(clang::QualType type, clang:
     return std::make_unique<ComplexTypeFunction>(std::move(params), std::move(return_type));
   }
 
+  if (const auto* atomic = type->getAs<clang::AtomicType>()) {
+    return std::make_unique<ComplexTypeAtomic>(
+        TranslateToComplexType(atomic->getValueType(), ctx, policy));
+  }
+
   const bool is_const = type.isConstQualified();
   const bool is_volatile = type.isVolatileQualified();
   type.removeLocalFastQualifiers();
